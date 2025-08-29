@@ -1,39 +1,83 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+<div align="center">
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+# im_text_field
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+<sub>A lightweight TextField enhancement adding real‑time trigger detection (@ # / ...), streaming keyword callbacks, and inline rich embedding via WidgetSpan placeholders.</sub>
+</div>
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## ✨ Features
 
-## Features
+- Multiple trigger characters: Any characters (e.g. `@`, `#`, `/`) each with an independent callback and rendering builder.
+- Real‑time keyword streaming: After a trigger starts a match before the caret, the current keyword (excluding the trigger symbol) is continuously emitted so you can show/update an external suggestion panel.
+- Arbitrary widget embedding: Insert fully custom `WidgetSpan`s (images, animated emoji, tags, etc.).
+- High compatibility: Wraps and forwards native `TextField` parameters; no enforced UI shape (no built‑in Overlay layer).
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+## 🚀 Quick Start
 
-## Getting started
+### 1. Add dependency
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Add to `pubspec.yaml`:
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+```yaml
+dependencies:
+  im_text_field: latest
 ```
 
-## Additional information
+### 2. Create controller & trigger configuration
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+final mentionController = ImEditingController({
+  '@': ImTrigger(
+    onTrigger: (keyword) {
+      // Fetch candidate users based on keyword and show overlay
+      mentionOverlay.show(keyword);
+    },
+    builder: ({required context, required data, style, required withComposing}) {
+      final user = data as User;
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        CircleAvatar(radius: 9, backgroundImage: NetworkImage(user.avatar)),
+        const SizedBox(width: 4),
+        Text('@${user.name}', style: style?.copyWith(color: Colors.blue)),
+      ]);
+    },
+  ),
+});
+```
+
+### 3. Use `ImTextField`
+
+```dart
+ImTextField(
+  controller: mentionController,
+  onFinishMatching: () => hideAllOverlays(),
+  maxMatchLength: 50,
+);
+```
+
+### 4. Insert a selected result
+
+```dart
+void onUserSelected(User user) {
+  mentionController.insertTriggeredValue('@', user);
+  hideMentionOverlay();
+}
+```
+
+### 5. Insert any `WidgetSpan`
+
+```dart
+mentionController.insertWidgetSpan(
+  {'type': 'emoji', 'value': '🔥'},
+  const WidgetSpan(
+    alignment: PlaceholderAlignment.baseline,
+    baseline: TextBaseline.alphabetic,
+    child: Text('🔥', style: TextStyle(fontSize: 18)),
+  ),
+);
+```
+
+## ❓ FAQ
+
+Q: When is `onTrigger` fired?
+
+A: When you input a trigger character and the character immediately before it is whitespace or not an English letter.

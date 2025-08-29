@@ -2,32 +2,48 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-typedef BuildWidgetFunction =
-    Widget Function({
-      required BuildContext context,
-      required dynamic data,
-      TextStyle? style,
-      required bool withComposing,
-    });
+/// Signature for building inline embedded widgets.
+///
+/// [data] is the original object passed when inserting (e.g. a user / topic model).
+/// [style] is the base text style of the field for consistency.
+/// [withComposing] mirrors the argument from [TextEditingController.buildTextSpan].
+typedef ImBuildWidgetFunction = Widget Function({
+  required BuildContext context,
+  required dynamic data,
+  TextStyle? style,
+  required bool withComposing,
+});
 
+/// Encapsulates a trigger definition:
+/// - [onTrigger] receives the current keyword (excludes the trigger char) each time text changes while active.
+/// - [builder] builds the inline widget once a value is inserted via [ImEditingController.insertTriggeredValue].
 class ImTrigger {
   final ValueChanged<String> onTrigger;
-  final BuildWidgetFunction builder;
+  final ImBuildWidgetFunction builder;
 
   ImTrigger({required this.onTrigger, required this.builder});
 }
 
-class Embedding {
-  final dynamic value;
-  final BuildWidgetFunction? builder;
-  final WidgetSpan? widgetSpan;
+/// Internal structure storing an embedded segment (either via builder or direct [WidgetSpan]).
+class _Embedding {
+  final dynamic value; // original data model
+  final ImBuildWidgetFunction? builder; // builder for dynamic widget
+  final WidgetSpan? widgetSpan; // directly provided span
 
-  Embedding({this.value, this.builder, this.widgetSpan});
+  _Embedding({this.value, this.builder, this.widgetSpan});
 }
 
+/// Custom controller extending [TextEditingController] to support:
+/// - Trigger definitions for mention-like behaviors.
+/// - Inline rich embeddings represented by private Unicode placeholders.
 class ImEditingController extends TextEditingController {
+  /// Mapping from trigger character (e.g. '@') to its [ImTrigger].
   final Map<String, ImTrigger> triggers;
-  final Map<String, Embedding> data = {};
+
+  /// Map of placeholder code -> embedding metadata.
+  final Map<String, _Embedding> data = {};
+
+  /// Current advanced private unicode (starts at E000).
   var _customUnicode = '\uE000';
 
   ImEditingController(this.triggers);
@@ -50,7 +66,7 @@ class ImEditingController extends TextEditingController {
   /// Usually used to insert custom widgets like images or icons into the text field.
   void insertWidgetSpan(Object value, WidgetSpan widgetSpan) {
     final unicode = _nextUnicode;
-    data[unicode] = Embedding(widgetSpan: widgetSpan, value: value);
+    data[unicode] = _Embedding(widgetSpan: widgetSpan, value: value);
 
     _replaceSelection(unicode);
   }
@@ -72,7 +88,7 @@ class ImEditingController extends TextEditingController {
     if (trigger == null) return;
 
     final unicode = _nextUnicode;
-    data[unicode] = Embedding(value: value, builder: trigger.builder);
+    data[unicode] = _Embedding(value: value, builder: trigger.builder);
 
     if (selection.isCollapsed && removePrefixMatch) {
       // Find the [triggerChar] character before the cursor and select it up to the cursor position
