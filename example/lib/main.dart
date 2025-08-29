@@ -93,15 +93,43 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: () {
                     final triggerChar = matches == _tags ? '#' : '@';
                     final match = matches[index];
-                    _controller.replaceSelectionWithValue(triggerChar, match);
+                    _controller.insertTriggeredValue(triggerChar, match);
                     _focusNode.requestFocus();
-                    
+
                     setState(() {
                       matches = [];
                     });
                   },
                 );
               },
+            ),
+          ),
+          // some icons
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              spacing: 8,
+              children:
+                  [
+                        (Icons.abc, 'abc'),
+                        (Icons.ac_unit, 'ac_unit'),
+                        (Icons.alarm, 'alarm'),
+                      ]
+                      .map(
+                        (icon) => IconButton.filled(
+                          onPressed: () {
+                            _controller.insertWidgetSpan(
+                              icon.$2,
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Icon(icon.$1, color: Colors.blue),
+                              ),
+                            );
+                          },
+                          icon: Icon(icon.$1),
+                        ),
+                      )
+                      .toList(),
             ),
           ),
           ImTextField(
