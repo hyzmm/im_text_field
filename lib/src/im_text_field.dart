@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_text_field/im_text_field.dart';
+import 'package:im_text_field/src/actions.dart';
 import 'dart:ui' as ui;
 
 import 'package:im_text_field/src/im_editing_controller.dart';
@@ -195,7 +196,7 @@ class ImTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.autofocus}
   final bool autofocus;
 
-  final WidgetStatesController? statesController ;
+  final WidgetStatesController? statesController;
 
   /// {@macro flutter.widgets.editableText.autocorrect}
   final bool autocorrect;
@@ -550,7 +551,7 @@ class _ImTextFieldState extends State<ImTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    final textField = TextField(
       groupId: widget.groupId,
       controller: widget.controller,
       focusNode: widget.focusNode,
@@ -567,7 +568,7 @@ class _ImTextFieldState extends State<ImTextField> {
       readOnly: widget.readOnly,
       showCursor: widget.showCursor,
       autofocus: widget.autofocus,
-      statesController: widget.statesController ,
+      statesController: widget.statesController,
       autocorrect: widget.autocorrect,
       smartDashesType: widget.smartDashesType,
       smartQuotesType: widget.smartQuotesType,
@@ -610,6 +611,12 @@ class _ImTextFieldState extends State<ImTextField> {
       canRequestFocus: widget.canRequestFocus,
       spellCheckConfiguration: widget.spellCheckConfiguration,
       magnifierConfiguration: TextMagnifier.adaptiveMagnifierConfiguration,
+    );
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        CopySelectionTextIntent: PlainCopyAction(controller, widget.focusNode),
+      },
+      child: textField,
     );
   }
 }

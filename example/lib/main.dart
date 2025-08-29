@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: () {
                     final triggerChar = matches == _tags ? '#' : '@';
                     final match = matches[index];
-                    _controller.insertTriggeredValue(triggerChar, match);
+                    _controller.insertTriggeredValue(triggerChar, match, plainText: "$triggerChar${match.$1}");
                     _focusNode.requestFocus();
 
                     setState(() {
@@ -124,6 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 alignment: PlaceholderAlignment.middle,
                                 child: Icon(icon.$1, color: Colors.blue),
                               ),
+                              plainText: ":${icon.$2}:",
                             );
                           },
                           icon: Icon(icon.$1),
