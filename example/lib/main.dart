@@ -45,11 +45,13 @@ class _MyHomePageState extends State<MyHomePage> {
         onTrigger: _onMatchMention,
         builder: (context, data, style, withComposing) =>
             Text('@${data.$1}', style: style!.copyWith(color: Colors.blue)),
+        markupBuilder: (data) => "[@${data.$1}]",
       ),
       '#': ImTrigger<(String, String)>(
         onTrigger: _onMatchTag,
         builder: (context, data, style, withComposing) =>
             Text('#${data.$1}', style: style!.copyWith(color: Colors.green)),
+        markupBuilder: (data) => "[#${data.$1}]",
       ),
     });
     super.initState();

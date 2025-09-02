@@ -506,6 +506,8 @@ class _ImTextFieldState extends State<ImTextField> {
   }
 
   onChanged() {
+    widget.onChanged?.call(controller.markupText);
+
     final text = controller.text;
     final beforeCursor = controller.selection.baseOffset - 1;
     if (beforeCursor < 0) {
@@ -576,7 +578,6 @@ class _ImTextFieldState extends State<ImTextField> {
       maxLines: widget.maxLines,
       minLines: widget.minLines,
       expands: widget.expands,
-      onChanged: widget.onChanged,
       onEditingComplete: widget.onEditingComplete,
       onSubmitted: widget.onSubmitted,
       onAppPrivateCommand: widget.onAppPrivateCommand,

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -22,8 +24,13 @@ typedef ImBuildWidgetFunction<T> =
 class ImTrigger<T> {
   final ValueChanged<String> onTrigger;
   final ImBuildWidgetFunction<T> builder;
+  final String Function(T data) markupBuilder;
 
-  ImTrigger({required this.onTrigger, required this.builder});
+  ImTrigger({
+    required this.onTrigger,
+    required this.builder,
+    required this.markupBuilder,
+  });
 }
 
 /// Internal structure storing an embedded segment (either via builder or direct [WidgetSpan]).
@@ -37,12 +44,14 @@ class _Embedding {
   builder; // builder for dynamic widget
   final WidgetSpan? widgetSpan; // directly provided span
   final String? plainText; // plain text representation for copying
+  final String? triggerChar; // the trigger character used for this embedding
 
   _Embedding({
     required this.value,
     this.builder,
     this.widgetSpan,
     this.plainText,
+    this.triggerChar,
   });
 }
 
@@ -62,6 +71,25 @@ class ImEditingController extends TextEditingController {
   ImEditingController(Map<String, dynamic> triggers)
     : triggers = TypedMap(triggers);
 
+  String get markupText {
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final ch = text[i];
+      if (_isCustomUnicode(ch)) {
+        final embedding = _data[ch];
+        if (embedding?.triggerChar != null) {
+          final trigger = triggers.get<dynamic>(embedding!.triggerChar!);
+          if (trigger != null) {
+            buffer.write(trigger.markupBuilder(embedding.value));
+            continue;
+          }
+        }
+      }
+      buffer.write(ch);
+    }
+    return buffer.toString();
+  }
+
   /// Converts an input string (which may contain custom unicode placeholders)
   /// into its plain text representation by replacing any embedded placeholders
   /// with the corresponding [_Embedding.plainText]. If a placeholder does not
@@ -74,7 +102,8 @@ class ImEditingController extends TextEditingController {
         final embedding = _data[ch];
         if (embedding != null) {
           // Add space before if previous char is not space and not at start
-          if (buffer.isNotEmpty && buffer.toString().codeUnitAt(buffer.length - 1) != 0x20) {
+          if (buffer.isNotEmpty &&
+              buffer.toString().codeUnitAt(buffer.length - 1) != 0x20) {
             buffer.write(' ');
           }
           if (embedding.plainText != null) buffer.write(embedding.plainText);
@@ -134,7 +163,7 @@ class ImEditingController extends TextEditingController {
   void insertTriggeredValue<T>(
     String triggerChar,
     T value, {
-    bool removePrefixMatch = true,
+    bool removePrefixMatch = false,
     bool suffixSpace = true,
     String? plainText,
   }) {
@@ -147,6 +176,7 @@ class ImEditingController extends TextEditingController {
       builder: (context, style, withComposing) =>
           trigger.builder(context, value, style, withComposing),
       plainText: plainText,
+      triggerChar: triggerChar,
     );
 
     if (selection.isCollapsed && removePrefixMatch) {
@@ -161,9 +191,8 @@ class ImEditingController extends TextEditingController {
           extentOffset: selection.start,
         );
       }
-
-      _replaceSelection(unicode + (suffixSpace ? ' ' : ''));
     }
+    _replaceSelection(unicode + (suffixSpace ? ' ' : ''));
   }
 
   @override
@@ -197,9 +226,27 @@ class ImEditingController extends TextEditingController {
     );
   }
 
-  void _replaceSelection(String text) {
-    final selection = this.selection;
-    this.text = this.text.replaceRange(selection.start, selection.end, text);
+  void _replaceSelection(String t) {
+    var selection = this.selection;
+    TextSelection newSelection;
+    if (selection.isValid) {
+      newSelection = TextSelection.collapsed(
+        offset: selection.start + t.length,
+      );
+    } else {
+      selection = TextSelection.collapsed(offset: text.length);
+      newSelection = TextSelection.collapsed(offset: text.length + t.length);
+    }
+
+    value = value.copyWith(
+      text: text.replaceRange(
+        max(0, selection.start),
+        max(0, selection.end),
+        t,
+      ),
+      selection: newSelection,
+      composing: TextRange.empty,
+    );
   }
 
   bool _isCustomUnicode(String text) {
