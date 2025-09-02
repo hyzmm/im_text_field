@@ -502,7 +502,7 @@ class _ImTextFieldState extends State<ImTextField> {
   }
 
   bool _isTriggerChar(String char) {
-    return controller.triggers.containsKey(char);
+    return controller.triggers.contains(char);
   }
 
   onChanged() {
@@ -545,7 +545,7 @@ class _ImTextFieldState extends State<ImTextField> {
     }
 
     final triggerChar = matchingChars[0];
-    final trigger = controller.triggers[triggerChar]!;
+    final trigger = controller.triggers.get(triggerChar)!;
     trigger.onTrigger(matchingChars.substring(1));
   }
 

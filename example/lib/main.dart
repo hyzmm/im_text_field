@@ -41,29 +41,15 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     _controller = ImEditingController({
-      '@': ImTrigger(
+      '@': ImTrigger<(String, String)>(
         onTrigger: _onMatchMention,
-        builder:
-            ({
-              required context,
-              required data,
-              style,
-              required withComposing,
-            }) =>
-                Text('@${data.$1}', style: style!.copyWith(color: Colors.blue)),
+        builder: (context, data, style, withComposing) =>
+            Text('@${data.$1}', style: style!.copyWith(color: Colors.blue)),
       ),
-      '#': ImTrigger(
+      '#': ImTrigger<(String, String)>(
         onTrigger: _onMatchTag,
-        builder:
-            ({
-              required context,
-              required data,
-              style,
-              required withComposing,
-            }) => Text(
-              '#${data.$1}',
-              style: style!.copyWith(color: Colors.green),
-            ),
+        builder: (context, data, style, withComposing) =>
+            Text('#${data.$1}', style: style!.copyWith(color: Colors.green)),
       ),
     });
     super.initState();
@@ -93,7 +79,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: () {
                     final triggerChar = matches == _tags ? '#' : '@';
                     final match = matches[index];
-                    _controller.insertTriggeredValue(triggerChar, match, plainText: "$triggerChar${match.$1}");
+                    _controller.insertTriggeredValue(
+                      triggerChar,
+                      match,
+                      plainText: "$triggerChar${match.$1}",
+                    );
                     _focusNode.requestFocus();
 
                     setState(() {

@@ -1,26 +1,27 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:im_text_field/im_text_field.dart';
 
 /// Signature for building inline embedded widgets.
 ///
-/// [data] is the original object passed when inserting (e.g. a user / topic model).
+/// [data] is the original dynamic passed when inserting (e.g. a user / topic model).
 /// [style] is the base text style of the field for consistency.
 /// [withComposing] mirrors the argument from [TextEditingController.buildTextSpan].
-typedef ImBuildWidgetFunction =
-    Widget Function({
-      required BuildContext context,
-      required dynamic data,
+typedef ImBuildWidgetFunction<T> =
+    Widget Function(
+      BuildContext context,
+      T data,
       TextStyle? style,
-      required bool withComposing,
-    });
+      bool withComposing,
+    );
 
 /// Encapsulates a trigger definition:
 /// - [onTrigger] receives the current keyword (excludes the trigger char) each time text changes while active.
 /// - [builder] builds the inline widget once a value is inserted via [ImEditingController.insertTriggeredValue].
-class ImTrigger {
+class ImTrigger<T> {
   final ValueChanged<String> onTrigger;
-  final ImBuildWidgetFunction builder;
+  final ImBuildWidgetFunction<T> builder;
 
   ImTrigger({required this.onTrigger, required this.builder});
 }
@@ -28,11 +29,21 @@ class ImTrigger {
 /// Internal structure storing an embedded segment (either via builder or direct [WidgetSpan]).
 class _Embedding {
   final dynamic value; // original data model
-  final ImBuildWidgetFunction? builder; // builder for dynamic widget
+  final Widget Function(
+    BuildContext context,
+    TextStyle? style,
+    bool withComposing,
+  )?
+  builder; // builder for dynamic widget
   final WidgetSpan? widgetSpan; // directly provided span
   final String? plainText; // plain text representation for copying
 
-  _Embedding({this.value, this.builder, this.widgetSpan, this.plainText});
+  _Embedding({
+    required this.value,
+    this.builder,
+    this.widgetSpan,
+    this.plainText,
+  });
 }
 
 /// Custom controller extending [TextEditingController] to support:
@@ -40,7 +51,7 @@ class _Embedding {
 /// - Inline rich embeddings represented by private Unicode placeholders.
 class ImEditingController extends TextEditingController {
   /// Mapping from trigger character (e.g. '@') to its [ImTrigger].
-  final Map<String, ImTrigger> triggers;
+  final TypedMap triggers;
 
   /// Map of placeholder code -> embedding metadata.
   final Map<String, _Embedding> _data = {};
@@ -48,7 +59,8 @@ class ImEditingController extends TextEditingController {
   /// Current advanced private unicode (starts at E000).
   var _customUnicode = '\uE000';
 
-  ImEditingController(this.triggers);
+  ImEditingController(Map<String, dynamic> triggers)
+    : triggers = TypedMap(triggers);
 
   /// Converts an input string (which may contain custom unicode placeholders)
   /// into its plain text representation by replacing any embedded placeholders
@@ -61,7 +73,15 @@ class ImEditingController extends TextEditingController {
       if (_isCustomUnicode(ch)) {
         final embedding = _data[ch];
         if (embedding != null) {
+          // Add space before if previous char is not space and not at start
+          if (buffer.isNotEmpty && buffer.toString().codeUnitAt(buffer.length - 1) != 0x20) {
+            buffer.write(' ');
+          }
           if (embedding.plainText != null) buffer.write(embedding.plainText);
+          // Add space after if next char is not space and not at end
+          if (i + 1 < text.length && text.codeUnitAt(i + 1) != 0x20) {
+            buffer.write(' ');
+          }
           continue;
         }
       }
@@ -84,12 +104,12 @@ class ImEditingController extends TextEditingController {
   /// Associates the given [value] with the [widgetSpan].
   /// The [widgetSpan] is embedded into the text at the current selection position,
   ///
-  /// [value]: The object to associate with the inserted widget span.
+  /// [value]: The dynamic to associate with the inserted widget span.
   /// [plainText] is the plain text representation of the widget span. When copying, [plainText] will be used as the replacement content.
   ///
   /// Usually used to insert custom widgets like images or icons into the text field.
   void insertWidgetSpan(
-    Object value,
+    dynamic value,
     WidgetSpan widgetSpan, {
     String? plainText,
   }) {
@@ -111,20 +131,21 @@ class ImEditingController extends TextEditingController {
   /// [removePrefixMatch] indicates whether to delete the matching prefix content before inserting, default is true.
   /// [suffixSpace] indicates whether to add a space after inserting the content, default is true.
   /// [plainText] is the plain text representation of the value. When copying, [plainText] will be used as the replacement content.
-  void insertTriggeredValue(
+  void insertTriggeredValue<T>(
     String triggerChar,
-    dynamic value, {
+    T value, {
     bool removePrefixMatch = true,
     bool suffixSpace = true,
     String? plainText,
   }) {
-    final trigger = triggers[triggerChar];
+    final trigger = triggers.get<ImTrigger<T>>(triggerChar);
     if (trigger == null) return;
 
     final unicode = _nextUnicode;
     _data[unicode] = _Embedding(
-      value: value,
-      builder: trigger.builder,
+      value: value as dynamic,
+      builder: (context, style, withComposing) =>
+          trigger.builder(context, value, style, withComposing),
       plainText: plainText,
     );
 
@@ -166,12 +187,7 @@ class ImEditingController extends TextEditingController {
             return WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
-              child: value.builder!(
-                context: context,
-                data: value.value,
-                style: style,
-                withComposing: withComposing,
-              ),
+              child: value.builder!(context, style, withComposing),
             );
           }
         }
