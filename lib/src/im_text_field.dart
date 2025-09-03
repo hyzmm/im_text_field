@@ -8,21 +8,12 @@ import 'package:im_text_field/src/actions.dart';
 import 'dart:ui' as ui;
 
 import 'package:im_text_field/src/im_editing_controller.dart';
-import 'package:im_text_field/src/string_extension.dart';
 
 class ImTextField extends StatefulWidget {
-  /// Maximum length of the match to search for before the cursor.
-  final int maxMatchLength;
-
-  /// Called when the user finishes matching
-  final VoidCallback onFinishMatching;
-
   final InputDecoration? decoration;
 
   const ImTextField({
     super.key,
-    this.maxMatchLength = 50,
-    required this.onFinishMatching,
     this.decoration,
     this.groupId = EditableText,
     required this.controller,
@@ -49,7 +40,6 @@ class ImTextField extends StatefulWidget {
     this.expands = false,
     this.maxLength,
     this.maxLengthEnforcement,
-    this.onChanged,
     this.onEditingComplete,
     this.onSubmitted,
     this.onAppPrivateCommand,
@@ -271,16 +261,6 @@ class ImTextField extends StatefulWidget {
   /// {@macro flutter.services.textFormatter.maxLengthEnforcement}
   final MaxLengthEnforcement? maxLengthEnforcement;
 
-  /// {@macro flutter.widgets.editableText.onChanged}
-  ///
-  /// See also:
-  ///
-  ///  * [inputFormatters], which are called before [onChanged]
-  ///    runs and can validate and change ("format") the input value.
-  ///  * [onEditingComplete], [onSubmitted]:
-  ///    which are more specialized input change notifications.
-  final ValueChanged<String>? onChanged;
-
   /// {@macro flutter.widgets.editableText.onEditingComplete}
   final VoidCallback? onEditingComplete;
 
@@ -487,70 +467,6 @@ class ImTextField extends StatefulWidget {
 }
 
 class _ImTextFieldState extends State<ImTextField> {
-  ImEditingController get controller => widget.controller;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(onChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(onChanged);
-    super.dispose();
-  }
-
-  bool _isTriggerChar(String char) {
-    return controller.triggers.contains(char);
-  }
-
-  onChanged() {
-    widget.onChanged?.call(controller.markupText);
-
-    final text = controller.text;
-    final beforeCursor = controller.selection.baseOffset - 1;
-    if (beforeCursor < 0) {
-      // cursor is before the start of the text
-      widget.onFinishMatching();
-      return;
-    }
-
-    // Starting from beforeCursor, search backwards up to [maxMatchLength] characters to find a match in [controller.triggers]
-    String? matchingChars;
-    for (
-      int i = beforeCursor;
-      i >= 0 && i > beforeCursor - widget.maxMatchLength;
-      i--
-    ) {
-      final char = text[i];
-      if (_isTriggerChar(char)) {
-        if (i == 0) {
-          matchingChars = text.substring(0, beforeCursor + 1);
-        } else {
-          final beforeTrigger = text[i - 1];
-          // If it is a space or a non-English character, trigger matching.
-          if (beforeTrigger.isWhitespace || !beforeTrigger.isAlphaNumSymbol) {
-            matchingChars = text.substring(i, beforeCursor + 1);
-          }
-        }
-        break;
-      } else if (char.isWhitespace) {
-        // Stop searching if a whitespace is encountered
-        break;
-      }
-    }
-
-    if (matchingChars == null) {
-      widget.onFinishMatching();
-      return;
-    }
-
-    final triggerChar = matchingChars[0];
-    final trigger = controller.triggers.get(triggerChar)!;
-    trigger.onTrigger(matchingChars.substring(1));
-  }
-
   @override
   Widget build(BuildContext context) {
     final textField = TextField(
@@ -615,7 +531,10 @@ class _ImTextFieldState extends State<ImTextField> {
     );
     return Actions(
       actions: <Type, Action<Intent>>{
-        CopySelectionTextIntent: PlainCopyAction(controller, widget.focusNode),
+        CopySelectionTextIntent: PlainCopyAction(
+          widget.controller,
+          widget.focusNode,
+        ),
       },
       child: textField,
     );

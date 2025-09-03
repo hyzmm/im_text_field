@@ -40,20 +40,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    _controller = ImEditingController({
-      '@': ImTrigger<(String, String)>(
-        onTrigger: _onMatchMention,
-        builder: (context, data, style, withComposing) =>
-            Text('@${data.$1}', style: style!.copyWith(color: Colors.blue)),
-        markupBuilder: (data) => "[@${data.$1}]",
-      ),
-      '#': ImTrigger<(String, String)>(
-        onTrigger: _onMatchTag,
-        builder: (context, data, style, withComposing) =>
-            Text('#${data.$1}', style: style!.copyWith(color: Colors.green)),
-        markupBuilder: (data) => "[#${data.$1}]",
-      ),
-    });
+    _controller = ImEditingController(
+      triggers: {
+        '@': ImTrigger<(String, String)>(
+          onTrigger: _onMatchMention,
+          builder: (context, data, style, withComposing) =>
+              Text('@${data.$1}', style: style!.copyWith(color: Colors.blue)),
+          markupBuilder: (data) => "[@${data.$1}]",
+        ),
+        '#': ImTrigger<(String, String)>(
+          onTrigger: _onMatchTag,
+          builder: (context, data, style, withComposing) =>
+              Text('#${data.$1}', style: style!.copyWith(color: Colors.green)),
+          markupBuilder: (data) => "[#${data.$1}]",
+        ),
+      },
+      onFinishMatching: () {
+        matches = [];
+      },
+    );
     super.initState();
   }
 
@@ -84,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _controller.insertTriggeredValue(
                       triggerChar,
                       match,
-                      plainText: "$triggerChar${match.$1}",
+                      display: "$triggerChar${match.$1}",
                     );
                     _focusNode.requestFocus();
 
@@ -111,12 +116,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         (icon) => IconButton.filled(
                           onPressed: () {
                             _controller.insertWidgetSpan(
-                              icon.$2,
+                              ":${icon.$2}:",
                               WidgetSpan(
                                 alignment: PlaceholderAlignment.middle,
                                 child: Icon(icon.$1, color: Colors.blue),
                               ),
-                              plainText: ":${icon.$2}:",
                             );
                           },
                           icon: Icon(icon.$1),
@@ -135,9 +139,6 @@ class _MyHomePageState extends State<MyHomePage> {
             focusNode: _focusNode,
             controller: _controller,
             maxLines: null,
-            onFinishMatching: () => setState(() {
-              matches = [];
-            }),
           ),
         ],
       ),
