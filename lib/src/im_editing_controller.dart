@@ -205,6 +205,15 @@ class ImEditingController extends TextEditingController {
     replaceSelection(unicode + (suffixSpace ? ' ' : ''));
   }
 
+  /// Inserts a trigger character at the current cursor position.
+  /// If the character before the cursor is a word character(same as [^A-Za-z0-9_]), a space will be added before the trigger character
+  void insertTriggerChar(String char) {
+    var start = selection.start;
+    if (start == -1) start = text.length;
+    final insertSpace = start > 0 && text[start - 1].isWordCharacter;
+    replaceSelection(insertSpace ? ' $char' : char);
+  }
+
   @override
   dispose() {
     removeListener(_onChanged);
@@ -292,7 +301,7 @@ class ImEditingController extends TextEditingController {
         } else {
           final beforeTrigger = text[i - 1];
           // If it is a space or a non-English character, trigger matching.
-          if (beforeTrigger.isWhitespace || !beforeTrigger.isAlphaNumSymbol) {
+          if (beforeTrigger.isWhitespace || !beforeTrigger.isWordCharacter) {
             matchingChars = text.substring(i, beforeCursor + 1);
           }
         }

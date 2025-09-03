@@ -56,7 +56,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       },
       onFinishMatching: () {
-        matches = [];
+        setState(() {
+          matches = [];
+        });
       },
     );
     super.initState();
@@ -89,6 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _controller.insertTriggeredValue(
                       triggerChar,
                       match,
+                      removePrefixMatch: true,
                       display: "$triggerChar${match.$1}",
                     );
                     _focusNode.requestFocus();
@@ -139,6 +142,32 @@ class _MyHomePageState extends State<MyHomePage> {
             focusNode: _focusNode,
             controller: _controller,
             maxLines: null,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              spacing: 8,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: () {
+                    _controller.insertTriggerChar('@');
+                  },
+                  icon: Text(
+                    "@",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: () {
+                    _controller.insertTriggerChar('#');
+                  },
+                  icon: Text(
+                    "#",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
