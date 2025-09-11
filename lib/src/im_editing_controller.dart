@@ -77,6 +77,8 @@ class ImEditingController extends TextEditingController {
   /// Current advanced private unicode (starts at F0000).
   var _customUnicode = _kUnusedUnicodeStart;
 
+  Function(TextPosition position)? bringIntoView;
+
   ImEditingController({
     required Map<String, dynamic> triggers,
     this.maxMatchLength = 50,
@@ -160,6 +162,7 @@ class ImEditingController extends TextEditingController {
     _data[unicode] = _Embedding(widgetSpan: widgetSpan, display: display);
 
     replaceSelection(unicode);
+    bringIntoView?.call(selection.extent);
   }
 
   /// Inserts a triggered value into the text field at the current cursor position.
@@ -212,6 +215,7 @@ class ImEditingController extends TextEditingController {
     if (start == -1) start = text.length;
     final insertSpace = start > 0 && text[start - 1].isWordCharacter;
     replaceSelection(insertSpace ? ' $char' : char);
+    bringIntoView?.call(selection.extent);
   }
 
   @override

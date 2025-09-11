@@ -132,16 +132,19 @@ class _MyHomePageState extends State<MyHomePage> {
                       .toList(),
             ),
           ),
-          ImTextField(
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.all(16),
-              fillColor: Colors.blue[50],
-              filled: true,
+          LimitedBox(
+            maxHeight: 100,
+            child: ImTextField(
+              decoration: InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                fillColor: Colors.blue[50],
+                filled: true,
+              ),
+              style: TextStyle(color: Colors.black),
+              focusNode: _focusNode,
+              controller: _controller,
+              maxLines: null,
             ),
-            style: TextStyle(color: Colors.black),
-            focusNode: _focusNode,
-            controller: _controller,
-            maxLines: null,
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),

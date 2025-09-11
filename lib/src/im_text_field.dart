@@ -467,9 +467,23 @@ class ImTextField extends StatefulWidget {
 }
 
 class _ImTextFieldState extends State<ImTextField> {
+  final GlobalKey _textFieldKey = GlobalKey();
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final editableState = _findEditableByKey(_textFieldKey);
+      widget.controller.bringIntoView = (TextPosition position) {
+        editableState?.bringIntoView(position);
+      };
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final textField = TextField(
+      key: _textFieldKey,
       groupId: widget.groupId,
       controller: widget.controller,
       focusNode: widget.focusNode,
@@ -538,5 +552,21 @@ class _ImTextFieldState extends State<ImTextField> {
       },
       child: textField,
     );
+  }
+
+  EditableTextState? _findEditableByKey(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return null;
+    EditableTextState? result;
+    void visitor(Element e) {
+      if (e is StatefulElement && e.state is EditableTextState) {
+        result = e.state as EditableTextState;
+      } else {
+        e.visitChildren(visitor);
+      }
+    }
+
+    ctx.visitChildElements(visitor);
+    return result;
   }
 }
