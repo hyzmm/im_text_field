@@ -78,11 +78,13 @@ class ImEditingController extends TextEditingController {
   var _customUnicode = _kUnusedUnicodeStart;
 
   Function(TextPosition position)? bringIntoView;
+  final VoidCallback? onInsertEmbedding;
 
   ImEditingController({
     required Map<String, dynamic> triggers,
     this.maxMatchLength = 50,
     required this.onFinishMatching,
+    this.onInsertEmbedding,
   }) : triggers = TypedMap(triggers) {
     addListener(_onChanged);
   }
@@ -163,6 +165,7 @@ class ImEditingController extends TextEditingController {
 
     replaceSelection(unicode);
     bringIntoView?.call(selection.extent);
+    onInsertEmbedding?.call();
   }
 
   /// Inserts a triggered value into the text field at the current cursor position.
@@ -206,6 +209,8 @@ class ImEditingController extends TextEditingController {
       }
     }
     replaceSelection(unicode + (suffixSpace ? ' ' : ''));
+    onInsertEmbedding?.call();
+    bringIntoView?.call(selection.extent);
   }
 
   /// Inserts a trigger character at the current cursor position.
