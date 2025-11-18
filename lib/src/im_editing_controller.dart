@@ -195,7 +195,7 @@ class ImEditingController extends TextEditingController {
       triggerChar: triggerChar,
     );
 
-    if (selection.isCollapsed && removePrefixMatch) {
+    if (selection.isCollapsed && removePrefixMatch && selection.start > 0) {
       // Find the [triggerChar] character before the cursor and select it up to the cursor position
       final triggerIndexBeforeCursor = text.lastIndexOf(
         triggerChar,
