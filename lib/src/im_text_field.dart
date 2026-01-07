@@ -519,7 +519,6 @@ class _ImTextFieldState extends State<ImTextField> {
       cursorColor: widget.cursorColor,
       selectionHeightStyle: widget.selectionHeightStyle,
       selectionWidthStyle: widget.selectionWidthStyle,
-      keyboardAppearance: MediaQuery.platformBrightnessOf(context),
       scrollPadding: widget.scrollPadding,
       dragStartBehavior: widget.dragStartBehavior,
       enableInteractiveSelection: widget.enableInteractiveSelection,
